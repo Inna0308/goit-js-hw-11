@@ -1,40 +1,19 @@
 import SimpleLightbox from 'simplelightbox';
 import iziToast from 'izitoast';
 
+import { galleryTemplate } from './js/render-functions';
+import { fetchPhotos } from './js/pixabay-api';
+
 const searchFormEl = document.querySelector('.js-search-form');
 const galleryEl = document.querySelector('.js-gallery');
 const loader = document.querySelector('.js-loader');
 
-const galleryTemplate = imgInfo => {
-  return `
-      <li class="gallery-item">
-      <a class="gallery-link" href="${imgInfo.largeImageURL}">
-        <img
-          class="gallery-image"
-          src="${imgInfo.webformatURL}"
-          data-source="${imgInfo.largeImageURL}"
-          alt="${imgInfo.tags}"
-        />
-      </a>
-      <div class="wrapper">
-        <ul class="img-content-wrapper">
-          <li class="text-info">
-            Likes<span class="number">${imgInfo.likes}</span>
-          </li>
-          <li class="text-info">
-            Views<span class="number">${imgInfo.views}</span>
-          </li>
-          <li class="text-info">
-            Comments<span class="number">${imgInfo.comments}</span>
-          </li>
-          <li class="text-info">
-            Downloads<span class="number">${imgInfo.downloads}</span>
-          </li>
-        </ul>
-      </div>
-    </li>
-    `;
-};
+const simpleLightbox = new SimpleLightbox('.js-gallery a', {
+  overlayOpacity: 0.9,
+  captions: true,
+  captionsData: 'alt',
+  captionDelay: 350,
+});
 
 const onSearchFormSubmit = event => {
   event.preventDefault();
@@ -49,18 +28,13 @@ const onSearchFormSubmit = event => {
     return;
   }
 
+  galleryEl.innerHTML = '';
   loader.classList.remove('is-hidden');
 
-  fetch(
-    `https://pixabay.com/api/?key=45714704-c3295be315f324c1eb86e3dfd&q=${userValue}&image_type=photo&orientation=horizontal&safesearch=true`
-  )
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(response.status);
-      }
-      return response.json();
-    })
+  fetchPhotos(userValue)
     .then(data => {
+      galleryEl.innerHTML = '';
+
       if (!data.hits.length) {
         iziToast.error({
           message:
@@ -77,13 +51,6 @@ const onSearchFormSubmit = event => {
         .join('');
 
       galleryEl.innerHTML = galleryCardTemplate;
-
-      new SimpleLightbox('.js-gallery a', {
-        overlayOpacity: 0.9,
-        captions: true,
-        captionsData: 'alt',
-        captionDelay: 350,
-      });
 
       simpleLightbox.refresh();
       searchFormEl.reset();
